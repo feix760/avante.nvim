@@ -2254,10 +2254,7 @@ function Sidebar:new_chat(args, cb)
   vim.schedule(function() self:create_todos_container() end)
 end
 
-local debounced_save_history = Utils.debounce(
-  function(self) Path.history.save(self.code.bufnr, self.chat_history) end,
-  1000
-)
+local debounced_save_history = function(self) Path.history.save(self.code.bufnr, self.chat_history) end
 
 function Sidebar:save_history() debounced_save_history(self) end
 
