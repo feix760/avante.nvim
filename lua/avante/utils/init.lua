@@ -224,7 +224,7 @@ function M.safe_keymap_set(mode, lhs, rhs, opts)
 
   ok, H = pcall(require, "lazy.core.handler")
   if not ok then
-    M.debug("lazy.nvim is not available. Avante will use vim.keymap.set")
+    -- M.debug("lazy.nvim is not available. Avante will use vim.keymap.set")
     vim.keymap.set(mode, lhs, rhs, opts)
     return
   end
@@ -1423,11 +1423,10 @@ function M.icons_enabled() return M.has("nvim-web-devicons") or M.has("mini.icon
 ---@param utf8_fallback string|nil
 ---@return string
 function M.icon(string_with_icon, utf8_fallback)
-  if M.icons_enabled() then
+  if string_with_icon:match("^[🤔✅❌🔄]") then
     return string_with_icon
-  else
-    return utf8_fallback or ""
   end
+  return utf8_fallback or ""
 end
 
 function M.deep_extend_with_metatable(behavior, ...)

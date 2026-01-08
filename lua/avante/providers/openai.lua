@@ -302,6 +302,16 @@ function M:parse_messages(opts)
     table.insert(final_messages, message)
   end)
 
+  for _, message in ipairs(final_messages) do
+    if message.tool_calls then
+      for _, tool_call in ipairs(message.tool_calls) do
+        if tool_call["function"] and tool_call["function"].arguments == "[]" then
+          tool_call["function"].arguments = "{}"
+        end
+      end
+    end
+  end
+
   return final_messages
 end
 
