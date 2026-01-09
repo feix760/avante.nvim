@@ -178,6 +178,40 @@ function M:parse_response(ctx, data_stream, _, opts)
 end
 
 local chat_id = ''
+local root_files = nil
+
+local function ls_dir(path, get_sub)
+  local files = {}
+  local dir = vim.loop.fs_scandir(path)
+  if not dir then
+    return nil, "Directory not found or not accessible: " .. tostring(path)
+  end
+
+  local format_path = function(name, type)
+    if type == "directory" then
+      return name .. "/"
+    end
+    return name
+  end
+
+  while true do
+    local name, type = vim.loop.fs_scandir_next(dir)
+    if not name then break end
+    if type == "directory" and get_sub ~= 0 and name ~= '.git' and name ~= 'node_modules' then
+      local sub_files = ls_dir(path .. "/" .. name, 0)
+      if #sub_files < 50 then
+        for _, sub_name in ipairs(sub_files) do
+          table.insert(files, name .. "/" .. sub_name)
+        end
+      else
+        table.insert(files, format_path(name, type))
+      end
+    else
+      table.insert(files, format_path(name, type))
+    end
+  end
+  return files
+end
 
 function M:parse_curl_args(prompt_opts)
   local provider_conf, request_body = Providers.parse_config(self)
@@ -201,6 +235,10 @@ function M:parse_curl_args(prompt_opts)
 
   -- Determine endpoint path based on use_response_api
   local endpoint_path = "/v1/chat"
+
+  if root_files == nil then
+    root_files = ls_dir(Utils.root.get())
+  end
 
   local messages = {
     {
@@ -226,6 +264,9 @@ function M:parse_curl_args(prompt_opts)
           type = "ephemeral"
         },
         text = table.concat({
+          '<project_structure>',
+          vim.json.encode(root_files),
+          '</project_structure>',
           prompt_opts.messages[1].content,
           '以上是用户希望你直接阅读和编辑的内容（如果代码已提供，无需重复使用 view 等工具读取内容）',
           prompt_opts.messages[2].content,
