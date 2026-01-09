@@ -134,7 +134,7 @@ function M:mock(ctx, opts)
 
   local lines = vim.split(res, "\n")
 
-  handle_lines(ctx, opts, lines)
+  M:handle_lines(ctx, opts, lines)
 end
 
 function M:parse_response(ctx, data_stream, _, opts)
@@ -174,7 +174,7 @@ function M:parse_response(ctx, data_stream, _, opts)
     buffer = ""
   end
 
-  handle_lines(ctx, opts, lines)
+  M:handle_lines(ctx, opts, lines)
 end
 
 local chat_id = ''
