@@ -1,4 +1,5 @@
 local Utils = require("avante.utils")
+local Path = require("avante.path")
 local Config = require("avante.config")
 local Clipboard = require("avante.clipboard")
 local Providers = require("avante.providers")
@@ -91,10 +92,14 @@ function M:handle_lines(ctx, opts, lines)
         -- 解析 tool_use 内容
         local tool_use_json = tool_use_content:gsub("^%s+", ""):gsub("%s+$", "")
         if tool_use_json ~= "" then
-          local jsn = vim.json.decode(tool_use_json)
-          jsn.id = jsn.id or nextId()
-          self:finish_pending_messages(ctx, opts)
-          self:add_tool_use_message(ctx, jsn, 'generating', opts)
+          local ok, jsn = pcall(vim.json.decode, tool_use_json)
+          if ok then
+            jsn.id = jsn.id or nextId()
+            self:finish_pending_messages(ctx, opts)
+            self:add_tool_use_message(ctx, jsn, 'generating', opts)
+          else
+            opts.on_stop({ reason = "error", error = "Invalid tool_use content " .. tool_use_json })
+          end
         else
           opts.on_stop({ reason = "error", error = "Empty tool_use content" })
         end
@@ -177,9 +182,6 @@ function M:parse_response(ctx, data_stream, _, opts)
   M:handle_lines(ctx, opts, lines)
 end
 
-local chat_id = ''
-local root_files = nil
-
 local function ls_dir(path, get_sub)
   local files = {}
   local dir = vim.loop.fs_scandir(path)
@@ -213,15 +215,101 @@ local function ls_dir(path, get_sub)
   return files
 end
 
+local start_data = {
+  chat_id = '',
+  root_files = nil,
+  system_prompt = '',
+  project_root = '',
+  repo_type = '',
+  repo = '',
+}
+
+local function init_start_data(prompt_opts)
+  local project_root = Utils.root.get()
+
+  chat_id = 'avante-' .. os.time() .. '-' .. string.format("%08x", math.random(0, 0xffffff))
+
+  root_files = ls_dir(project_root)
+
+  local tools = {}
+  for _, tool in ipairs(prompt_opts.tools) do
+    local description = tool.description
+    if tool.get_description then
+      description = tool:get_description()
+    end
+    local input = {}
+    for _, field in ipairs(tool.param.fields) do
+      local desc = field.description
+      if field.get_description then
+        desc = field:get_description()
+      end
+      table.insert(input, {
+        name = field.name,
+        type = field.type,
+        description = desc,
+      })
+    end
+    table.insert(tools, '<tool>\n'..vim.json.encode({
+      name = tool.name,
+      description = description,
+      input = input,
+      returns = tool.returns,
+    })..'\n</tool>')
+  end
+  local system_prompt = Path.prompts.render_file("aone.avanterules", {
+    ask = true,
+    code_lang = '',
+    -- hack todos
+    todos = table.concat(tools, "\n"),
+  })
+
+  local repo = ''
+  local repo_type = ''
+  -- 尝试读取 project_root 下的 .git/config 获取仓库地址
+  if vim.loop.fs_stat(project_root .. "/.git/config") then
+    local git_config = vim.fn.readfile(project_root .. "/.git/config")
+    for _, line in ipairs(git_config) do
+      if line:match("^%s*url%s*=%s*(.+)$") then
+        repo = line:match("^%s*url%s*=%s*(.+)$")
+        repo_type = 'git'
+        break
+      end
+    end
+  end
+
+  start_data = {
+    project_root = project_root,
+    chat_id = chat_id,
+    root_files = root_files,
+    system_prompt = system_prompt,
+    repo_type = repo_type,
+    repo = repo,
+  }
+end
+
 function M:parse_curl_args(prompt_opts)
   local provider_conf, request_body = Providers.parse_config(self)
+
+  -- 开始的时候 messages 长度 2
+  if #prompt_opts.messages <= 2 then
+    init_start_data(prompt_opts)
+  end
+
+  local chat_id = start_data.chat_id
+  local project_root = start_data.project_root
+  local root_files = start_data.root_files
+  local system_prompt = start_data.system_prompt
+  local repo_type = start_data.repo_type
+  local repo = start_data.repo
 
   local headers = {
     ["Content-Type"] = "application/json",
     ["x-model-name"] = "ide-idealab/" .. provider_conf.model,
     ["x-client-type"] = "Visual Studio Code",
     ["x-client-version"] = "1.107.1",
-    ["x-plugin-version"] = "3.2.48"
+    ["x-plugin-version"] = "3.2.48",
+    ["x-idealab-session-id"] = chat_id,
+    ["x-git-repos"] = repo,
   }
 
   if Providers.env.require_api_key(provider_conf) then
@@ -236,14 +324,19 @@ function M:parse_curl_args(prompt_opts)
   -- Determine endpoint path based on use_response_api
   local endpoint_path = "/v1/chat"
 
-  if root_files == nil then
-    root_files = ls_dir(Utils.root.get())
-  end
+  local system_info = {
+    system_data = vim.uv.os_uname().sysname,
+    shell = os.getenv("SHELL"),
+    project_root = project_root,
+    repo_type = repo_type,
+    repo = repo,
+    agent_type = '当前你正处于 Agent 模式',
+  }
 
   local messages = {
     {
       role = "system",
-      content = Prompts.get_ReAct_system_prompt(provider_conf, prompt_opts),
+      content = system_prompt,
     },
     {
       aone_copilot_message_type= "claude_cache_control_message",
@@ -264,11 +357,17 @@ function M:parse_curl_args(prompt_opts)
           type = "ephemeral"
         },
         text = table.concat({
+          '<environment>',
+          vim.json.encode(system_info),
+          '</environment>',
+          '<additional_data>',
           '<project_structure>',
           vim.json.encode(root_files),
           '</project_structure>',
+          '以上是会话初期的部分文件结构，不是最新的，仅供参考，如需查看最新文件结构，请使用相关工具。',
           prompt_opts.messages[1].content,
           '以上是用户希望你直接阅读和编辑的内容（如果代码已提供，无需重复使用 view 等工具读取内容）',
+          '</additional_data>',
           prompt_opts.messages[2].content,
         }, "\n"),
         type = "text"
@@ -277,7 +376,6 @@ function M:parse_curl_args(prompt_opts)
     },
   }
 
-  local idx = 0
   local assistant = {}
   local add_assistant = function()
     if #assistant > 0 then
@@ -286,6 +384,12 @@ function M:parse_curl_args(prompt_opts)
     end
   end
 
+  local add_message = function(msg)
+    add_assistant()
+    table.insert(messages, msg)
+  end
+
+  local idx = 0
   vim
     .iter(prompt_opts.messages)
     :each(function(msg)
@@ -297,11 +401,8 @@ function M:parse_curl_args(prompt_opts)
           table.insert(assistant, msg.content)
           return
         end
-        add_assistant()
-        table.insert(messages, { role = msg.role, content = msg.content })
+        add_message({ role = msg.role, content = msg.content })
       elseif type(msg.content) == "table" then
-        add_assistant()
-
         if #msg.content == 1 then
           local obj = msg.content[1]
           local content = ''
@@ -312,29 +413,38 @@ function M:parse_curl_args(prompt_opts)
               id = obj.id,
             }) .. '\n</tool_use>'
           elseif obj.type == 'tool_result' then
-            content = '<tool_result>\n' .. vim.json.encode({
-              tool_use_id = obj.tool_use_id,
-              is_error = obj.is_error,
-              content = obj.content,
-              is_user_declined = obj.is_user_declined,
-            }) .. '\n</tool_result>'
+            content = { {
+              text = '<tool_result>\n' .. vim.json.encode({
+                tool_use_id = obj.tool_use_id,
+                is_error = obj.is_error,
+                content = obj.content,
+                is_user_declined = obj.is_user_declined,
+              }) .. '\n</tool_result>',
+              type = "text",
+            } }
+            add_message({
+              role = msg.role,
+              content = content,
+              aone_copilot_message_type = 'tool_result',
+            })
+            return
           else
             content = vim.json.encode(obj)
           end
-          table.insert(messages, {
-            role = msg.role,
-            content = content,
-          })
+
+          if msg.role == 'assistant' then
+            table.insert(assistant, content)
+            return
+          end
+
+          add_message({ role = msg.role, content = content })
         else
-          table.insert(messages, { role = msg.role, content = vim.json.encode(msg.content) })
+          add_message({ role = msg.role, content = vim.json.encode(msg.content) })
         end
       end
     end)
 
-  -- 开始的时候 messages 长度 2
-  if #prompt_opts.messages <= 2 then
-    chat_id = os.time() .. '-' .. string.format("%04x", math.random(0, 0xffff))
-  end
+  add_assistant()
 
   local base_body = {
     needAppend = false,
@@ -347,6 +457,7 @@ function M:parse_curl_args(prompt_opts)
   return {
     url =  Utils.url_join(provider_conf.endpoint, endpoint_path),
     proxy = provider_conf.proxy,
+    -- proxy = 'http://127.0.0.1:8080',
     insecure = provider_conf.allow_insecure,
     headers = Utils.tbl_override(headers, self.extra_headers),
     body = base_body,
