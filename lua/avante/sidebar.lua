@@ -3419,7 +3419,7 @@ function Sidebar:create_todos_container()
   end
 
   -- Calculate safe height to prevent "Not enough room" error
-  local safe_height = math.min(3, math.max(1, vim.o.lines - 5))
+  local safe_height = math.min(6, math.max(1, vim.o.lines - 5))
 
   if not Utils.is_valid_container(self.containers.todos, true) then
     self.containers.todos = Split({
@@ -3459,12 +3459,12 @@ function Sidebar:create_todos_container()
   local focused_idx = 1
   local todos_content_lines = {}
   for idx, todo in ipairs(history.todos) do
-    local status_content = "[ ]"
+    local status_content = "🕓"
     if todo.status == "done" then
       done_count = done_count + 1
-      status_content = "[x]"
+      status_content = "✅"
     end
-    if todo.status == "doing" then status_content = "[-]" end
+    if todo.status == "doing" then status_content = "⏳" end
     local line = string.format("%s %d. %s", status_content, idx, todo.content)
     if todo.status == "cancelled" then line = "~~" .. line .. "~~" end
     if todo.status ~= "todo" then focused_idx = idx + 1 end

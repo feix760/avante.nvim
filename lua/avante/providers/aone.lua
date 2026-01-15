@@ -246,6 +246,7 @@ local function init_start_data(prompt_opts)
       table.insert(input, {
         name = field.name,
         type = field.type,
+        items = field.items,
         description = desc,
       })
     end
