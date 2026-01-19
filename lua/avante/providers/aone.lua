@@ -286,7 +286,7 @@ local function init_start_data(prompt_opts)
       local content = vim.fn.readfile(project_root .. "/" .. file)
       table.insert(core_files, {
         file = file,
-        content = content,
+        content = table.concat(content, '\n'),
       })
     end
   end
