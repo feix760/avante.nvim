@@ -3047,7 +3047,7 @@ function Sidebar:create_input_container()
     group = self.augroup,
     buffer = self.containers.input.bufnr,
     callback = function()
-      if Config.windows.ask.start_insert then vim.cmd("noautocmd startinsert!") end
+      -- if Config.windows.ask.start_insert then vim.cmd("noautocmd startinsert!") end
     end,
   })
 
