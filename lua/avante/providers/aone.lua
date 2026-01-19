@@ -223,6 +223,9 @@ local start_data = {
   project_root = '',
   repo_type = '',
   repo = '',
+  selected_files = '',
+  user_query = '',
+  messages_skip = 0,
 }
 
 local function init_start_data(prompt_opts)
@@ -291,6 +294,19 @@ local function init_start_data(prompt_opts)
     end
   end
 
+  local selected_files
+  local user_query
+  local messages_skip = 0
+  if #prompt_opts.messages >= 2 then
+    selected_files = prompt_opts.messages[1].content
+    user_query = prompt_opts.messages[2].content
+    messages_skip = 2
+  else
+    selected_files = ''
+    user_query = prompt_opts.messages[1].content
+    messages_skip = 1
+  end
+
   start_data = {
     project_root = project_root,
     chat_id = chat_id,
@@ -299,6 +315,9 @@ local function init_start_data(prompt_opts)
     system_prompt = system_prompt,
     repo_type = repo_type,
     repo = repo,
+    selected_files = selected_files,
+    user_query = user_query,
+    messages_skip = messages_skip,
   }
 end
 
@@ -317,6 +336,9 @@ function M:parse_curl_args(prompt_opts)
   local system_prompt = start_data.system_prompt
   local repo_type = start_data.repo_type
   local repo = start_data.repo
+  local selected_files = start_data.selected_files
+  local user_query = start_data.user_query
+  local messages_skip = start_data.messages_skip
 
   local headers = {
     ["Content-Type"] = "application/json",
@@ -385,10 +407,10 @@ function M:parse_curl_args(prompt_opts)
           vim.json.encode(core_files),
           '</project_core_files>',
           '以上是项目的核心文件，无需重复使用 view 等工具读取内容',
-          prompt_opts.messages[1].content,
-          '以上是用户希望你直接阅读和编辑的内容（如果代码已提供，无需重复使用 view 等工具读取内容）',
+          selected_files,
+          selected_files ~= '' and '以上是用户希望你直接阅读和编辑的内容（如果代码已提供，无需重复使用 view 等工具读取内容）' or '',
           '</additional_data>',
-          prompt_opts.messages[2].content,
+          user_query,
         }, "\n"),
         type = "text"
       }},
@@ -414,7 +436,7 @@ function M:parse_curl_args(prompt_opts)
     .iter(prompt_opts.messages)
     :each(function(msg)
       idx = idx + 1
-      if idx <= 2 then return end
+      if idx <= messages_skip then return end
 
       if type(msg.content) == "string" then
         if msg.role == 'assistant' then
