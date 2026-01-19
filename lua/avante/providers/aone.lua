@@ -218,6 +218,7 @@ end
 local start_data = {
   chat_id = '',
   root_files = nil,
+  core_files = nil,
   system_prompt = '',
   project_root = '',
   repo_type = '',
@@ -278,10 +279,23 @@ local function init_start_data(prompt_opts)
     end
   end
 
+  local core_files = {}
+  -- 尝试读取 project_root 下的 package.json、README.md 获取依赖
+  for _, file in ipairs({ 'package.json', 'README.md' }) do
+    if vim.loop.fs_stat(project_root .. "/" .. file) then
+      local content = vim.fn.readfile(project_root .. "/" .. file)
+      table.insert(core_files, {
+        file = file,
+        content = content,
+      })
+    end
+  end
+
   start_data = {
     project_root = project_root,
     chat_id = chat_id,
     root_files = root_files,
+    core_files = core_files,
     system_prompt = system_prompt,
     repo_type = repo_type,
     repo = repo,
@@ -299,6 +313,7 @@ function M:parse_curl_args(prompt_opts)
   local chat_id = start_data.chat_id
   local project_root = start_data.project_root
   local root_files = start_data.root_files
+  local core_files = start_data.core_files
   local system_prompt = start_data.system_prompt
   local repo_type = start_data.repo_type
   local repo = start_data.repo
@@ -366,6 +381,10 @@ function M:parse_curl_args(prompt_opts)
           vim.json.encode(root_files),
           '</project_structure>',
           '以上是会话初期的部分文件结构，不是最新的，仅供参考，如需查看最新文件结构，请使用相关工具。',
+          '<project_core_files>',
+          vim.json.encode(core_files),
+          '</project_core_files>',
+          '以上是项目的核心文件，无需重复使用 view 等工具读取内容',
           prompt_opts.messages[1].content,
           '以上是用户希望你直接阅读和编辑的内容（如果代码已提供，无需重复使用 view 等工具读取内容）',
           '</additional_data>',
