@@ -2387,6 +2387,7 @@ function Sidebar:create_selected_code_container()
     })
     self.containers.selected_code:mount()
     self:adjust_layout()
+    self.containers.selected_code:map("n", 'q', function() self:shutdown() end)
     self:setup_window_navigation(self.containers.selected_code)
   end
 end
@@ -3379,6 +3380,8 @@ function Sidebar:create_selected_files_container()
     local line_number = api.nvim_win_get_cursor(self.containers.selected_files.winid)[1]
     remove_file(line_number)
   end, { noremap = true, silent = true })
+
+  self.containers.selected_files:map("n", 'q', function() self:shutdown() end)
 
   self.containers.selected_files:map("x", Config.mappings.sidebar.remove_file, function()
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", false)
