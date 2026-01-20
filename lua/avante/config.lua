@@ -28,6 +28,7 @@ M.instructions_file = "avante.md"
 ---@class avante.Config
 M._defaults = {
   debug = false,
+  -- debug = true,
   ---@alias avante.Mode "agentic" | "legacy"
   ---@type avante.Mode
   mode = "agentic",

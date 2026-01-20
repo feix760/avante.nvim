@@ -223,9 +223,6 @@ local start_data = {
   project_root = '',
   repo_type = '',
   repo = '',
-  selected_files = '',
-  user_query = '',
-  messages_skip = 0,
 }
 
 local function init_start_data(prompt_opts)
@@ -285,26 +282,14 @@ local function init_start_data(prompt_opts)
   local core_files = {}
   -- 尝试读取 project_root 下的 package.json、README.md 获取依赖
   for _, file in ipairs({ 'package.json', 'README.md' }) do
-    if vim.loop.fs_stat(project_root .. "/" .. file) then
+    -- 如果文件大小小于 10kb
+    if vim.loop.fs_stat(project_root .. "/" .. file) and vim.loop.fs_stat(project_root .. "/" .. file).size < 10 * 1024 then
       local content = vim.fn.readfile(project_root .. "/" .. file)
       table.insert(core_files, {
         file = file,
         content = table.concat(content, '\n'),
       })
     end
-  end
-
-  local selected_files
-  local user_query
-  local messages_skip = 0
-  if #prompt_opts.messages >= 2 then
-    selected_files = prompt_opts.messages[1].content
-    user_query = prompt_opts.messages[2].content
-    messages_skip = 2
-  else
-    selected_files = ''
-    user_query = prompt_opts.messages[1].content
-    messages_skip = 1
   end
 
   start_data = {
@@ -315,9 +300,6 @@ local function init_start_data(prompt_opts)
     system_prompt = system_prompt,
     repo_type = repo_type,
     repo = repo,
-    selected_files = selected_files,
-    user_query = user_query,
-    messages_skip = messages_skip,
   }
 end
 
@@ -336,9 +318,6 @@ function M:parse_curl_args(prompt_opts)
   local system_prompt = start_data.system_prompt
   local repo_type = start_data.repo_type
   local repo = start_data.repo
-  local selected_files = start_data.selected_files
-  local user_query = start_data.user_query
-  local messages_skip = start_data.messages_skip
 
   local headers = {
     ["Content-Type"] = "application/json",
@@ -388,34 +367,6 @@ function M:parse_curl_args(prompt_opts)
       } },
       role = "user",
     },
-    {
-      aone_copilot_message_type = "user_query",
-      content = { {
-        cache_control = {
-          type = "ephemeral"
-        },
-        text = table.concat({
-          '<environment>',
-          vim.json.encode(system_info),
-          '</environment>',
-          '<additional_data>',
-          '<project_structure>',
-          vim.json.encode(root_files),
-          '</project_structure>',
-          '以上是会话初期的部分文件结构，不是最新的，仅供参考，如需查看最新文件结构，请使用相关工具。',
-          '<project_core_files>',
-          vim.json.encode(core_files),
-          '</project_core_files>',
-          '以上是项目的核心文件，无需重复使用 view 等工具读取内容',
-          selected_files,
-          selected_files ~= '' and '以上是用户希望你直接阅读和编辑的内容（如果代码已提供，无需重复使用 view 等工具读取内容）' or '',
-          '</additional_data>',
-          user_query,
-        }, "\n"),
-        type = "text"
-      }},
-      role = "user"
-    },
   }
 
   local assistant = {}
@@ -432,13 +383,74 @@ function M:parse_curl_args(prompt_opts)
   end
 
   local idx = 0
+  local last_user_query_idx = 0
   vim
     .iter(prompt_opts.messages)
     :each(function(msg)
       idx = idx + 1
-      if idx <= messages_skip then return end
+      if type(msg.content) == "string"  and msg.role == 'user' and msg.content:match("^<task>") then
+        last_user_query_idx = idx
+      end
+    end)
+
+  idx = 0
+  local context_message = ''
+  local has_set_environment = false
+  vim
+    .iter(prompt_opts.messages)
+    :each(function(msg)
+      idx = idx + 1
+
+      if msg.is_context then
+        if msg.content then
+          context_message = table.concat({
+            '<additional_data>',
+            msg.content,
+            '以上是用户希望你直接阅读和编辑的内容（如果代码已提供，无需重复使用 view 等工具读取内容）',
+            '/<additional_data>',
+          }, "\n")
+        end
+        return
+      end
 
       if type(msg.content) == "string" then
+        if msg.role == 'user' and msg.content:match("^<task>") then
+          local contents = {}
+          if has_set_environment == false then
+            has_set_environment = true
+            table.insert(contents, table.concat({
+              '<environment>',
+              '<system_info>',
+              vim.json.encode(system_info),
+              '/<system_info>',
+              '<project_structure>',
+              vim.json.encode(root_files),
+              '</project_structure>',
+              '以上是会话初期的部分文件结构，不是最新的，仅供参考，如需查看最新文件结构，请使用相关工具。',
+              '<project_core_files>',
+              vim.json.encode(core_files),
+              '</project_core_files>',
+              '</environment>',
+            }, "\n"))
+          end
+          if idx == last_user_query_idx then
+            table.insert(contents, context_message)
+          end
+          table.insert(contents, msg.content)
+          add_message({
+            aone_copilot_message_type = "user_query",
+            content = { {
+              cache_control = {
+                type = "ephemeral"
+              },
+              text = table.concat(contents, "\n\n"),
+              type = "text"
+            }},
+            role = "user"
+          })
+          return
+        end
+
         if msg.role == 'assistant' then
           table.insert(assistant, msg.content)
           return

@@ -1782,7 +1782,7 @@ function Sidebar:update_content(content, opts)
 
   self.old_result_lines = history_lines
 
-  api.nvim_set_option_value("filetype", "Avante", { buf = bufnr })
+  api.nvim_set_option_value("filetype", "markdown", { buf = bufnr })
   Utils.lock_buf(bufnr)
 
   vim.defer_fn(function()
@@ -3183,7 +3183,7 @@ function Sidebar:render(opts)
       swapfile = false,
       buftype = "nofile",
       bufhidden = "wipe",
-      filetype = "Avante",
+      filetype = "markdown",
     }),
     win_options = vim.tbl_deep_extend("force", base_win_options, {
       wrap = Config.windows.wrap,
