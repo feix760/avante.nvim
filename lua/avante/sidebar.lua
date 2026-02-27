@@ -1726,7 +1726,8 @@ function Sidebar:should_auto_scroll()
 
   local is_scrolled_to_bottom = last_visible_line >= total_lines - 1
 
-  return is_scrolled_to_bottom
+  return true
+  -- return is_scrolled_to_bottom
 end
 
 Sidebar.throttled_update_content = Utils.throttle(function(self, ...)
