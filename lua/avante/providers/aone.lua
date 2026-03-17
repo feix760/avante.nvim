@@ -83,7 +83,7 @@ end
 function M:handle_lines(ctx, opts, lines)
   for _, line in ipairs(lines) do
     -- 检查是否是 tool_use 开始标签
-    if line:match("^%s*<tool_use>%s*$") then
+    if line:match("^%s*<tool_use%s*([^>]*)>%s*$") then
       in_tool_use = true
       tool_use_content = ""
     -- 检查是否是 tool_use 结束标签
@@ -461,7 +461,7 @@ function M:parse_curl_args(prompt_opts)
           local obj = msg.content[1]
           local content = ''
           if obj.type == 'tool_use' then
-            content = '<tool_use>\n' .. vim.json.encode({
+            content = '<tool_use json_validate="true">\n' .. vim.json.encode({
               name = obj.name,
               input = obj.input,
               id = obj.id,
