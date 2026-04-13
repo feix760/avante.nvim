@@ -118,6 +118,12 @@ function H.keymaps()
   vim.keymap.set("n", "<Plug>(AvanteConflictPrevConflict)", function() Diff.find_prev("ours") end)
   vim.keymap.set("n", "<Plug>(AvanteSelectModel)", function() require("avante.api").select_model() end)
 
+  -- vim.keymap.set({ "n", "v" }, "<leader>tt", function()
+    -- local diagnostics = Utils.lsp.get_diagnostics()
+    -- local jsn_str = vim.json.encode(diagnostics)
+    -- Utils.debug('debug', jsn_str)
+  -- end)
+
   if Config.behaviour.auto_set_keymaps then
     Utils.safe_keymap_set(
       { "n", "v" },
