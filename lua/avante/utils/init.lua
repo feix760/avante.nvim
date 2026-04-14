@@ -1810,4 +1810,70 @@ function M.is_floating_window(win_id)
   return config.relative ~= ""
 end
 
+-- 使用 Node.js 的 jsonrepair 库修复无效的 JSON
+function M.repair_json(json_str)
+  -- 生成临时文件路径
+  local temp_input = os.tmpname()
+  local temp_output = temp_input .. "_fixed"
+
+  -- 将 JSON 字符串写入临时文件
+  local input_file = io.open(temp_input, "w")
+  if not input_file then
+    self:debug("Failed to create temporary input file")
+    return nil
+  end
+  input_file:write(json_str)
+  input_file:close()
+
+  -- 构建 Node.js 命令，读取临时文件并输出到另一个临时文件
+  local command = string.format(
+    'node -e "try { const {jsonrepair} = require(\'jsonrepair\'); const fs = require(\'fs\'); const input = fs.readFileSync(\'%s\', \'utf8\'); const repaired = jsonrepair(input); fs.writeFileSync(\'%s\', repaired); } catch(err) {}" 2>/dev/null',
+    temp_input:gsub("\\", "/"),
+    temp_output:gsub("\\", "/")
+  )
+
+  -- 执行命令
+  local handle = io.popen(command)
+  if not handle then
+    self:debug("Failed to execute jsonrepair command")
+    os.remove(temp_input)
+    return nil
+  end
+
+  local success = handle:close()
+
+  if not success then
+    self:debug("Failed to repair JSON")
+    os.remove(temp_input)
+    os.remove(temp_output)
+    return nil
+  end
+
+  -- 读取输出文件
+  local output_file = io.open(temp_output, "r")
+  if not output_file then
+    self:debug("Failed to read repaired JSON output")
+    os.remove(temp_input)
+    os.remove(temp_output)
+    return nil
+  end
+
+  local result = output_file:read("*a")
+  output_file:close()
+
+  -- 删除临时文件
+  os.remove(temp_input)
+  os.remove(temp_output)
+
+  if result and result ~= "" then
+    -- 移除结果中的换行符
+    result = result:gsub("^%s*(.-)%s*$", "%1")
+    self:info("JSON repaired successfully")
+    return result
+  else
+    self:debug("Failed to repair JSON")
+    return nil
+  end
+end
+
 return M
