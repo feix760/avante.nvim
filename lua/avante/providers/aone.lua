@@ -100,7 +100,7 @@ function repair_json(json_str)
   if result and result ~= "" then
     -- 移除结果中的换行符
     result = result:gsub("^%s*(.-)%s*$", "%1")
-    Utils.debug("JSON repaired successfully")
+    Utils.info("JSON repaired successfully")
     return result
   else
     Utils.debug("Failed to repair JSON")
