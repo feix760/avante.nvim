@@ -268,11 +268,16 @@ local function init_start_data(prompt_opts)
       returns = tool.returns,
     })..'\n</tool>')
   end
+
+  local hub = require("mcphub").get_hub_instance()
+  local mcp = hub and hub:get_active_servers_prompt() or ""
+
   local system_prompt = Path.prompts.render_file("aone.avanterules", {
     ask = true,
     code_lang = '',
     -- hack todos
-    todos = table.concat(tools, "\n"),
+    tools = table.concat(tools, "\n"),
+    mcp = mcp
   })
 
   local repo = ''
