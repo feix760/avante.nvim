@@ -61,7 +61,7 @@ function repair_json(json_str)
   local command = string.format(
     'node -e "try { const {jsonrepair} = require(\'jsonrepair\'); const fs = require(\'fs\'); const input = fs.readFileSync(\'%s\', \'utf8\'); const repaired = jsonrepair(input); fs.writeFileSync(\'%s\', repaired); } catch(err) {}" 2>/dev/null',
     temp_input:gsub("\\", "/"),
-    temp_output:gsub("\\", "/"),
+    temp_output:gsub("\\", "/")
   )
 
   -- 执行命令
