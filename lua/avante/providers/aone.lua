@@ -179,6 +179,7 @@ function M:parse_response(ctx, data_stream, _, opts)
   local lines = {}
 
   if json.content then
+    if opts.on_chunk then opts.on_chunk(json.content) end
     buffer = buffer .. json.content
     lines = vim.split(buffer, "\n")
     -- 保留最后一行（可能不完整）
@@ -238,7 +239,9 @@ local start_data = {
 local function init_start_data(prompt_opts)
   local project_root = Utils.root.get()
 
-  chat_id = 'avante-' .. os.time() .. '-' .. string.format("%08x", math.random(0, 0xffffff))
+  -- 2133d35c17761635479798037e0ccf
+  -- avante1776164386d3356a5741ba10
+  chat_id = 'avante' .. os.time() .. string.format("%014x", math.random(0, 0xffffffffffffff))
 
   root_files = ls_dir(project_root)
 
@@ -272,12 +275,47 @@ local function init_start_data(prompt_opts)
   local hub = require("mcphub").get_hub_instance()
   local mcp = hub and hub:get_active_servers_prompt() or ""
 
+  local skills = {}
+  local skill_dirs = {
+    vim.fn.expand("~/.agents/skills"),
+    project_root .. "/.agents/skills",
+  }
+  local seen_skills = {}
+  for _, skill_base_dir in ipairs(skill_dirs) do
+    local dir = vim.loop.fs_scandir(skill_base_dir)
+    if dir then
+      while true do
+        local name, type = vim.loop.fs_scandir_next(dir)
+        if not name then break end
+        if type == "directory" then
+          local skill_file = skill_base_dir .. "/" .. name .. "/SKILL.md"
+          if vim.loop.fs_stat(skill_file) and not seen_skills[name] then
+            seen_skills[name] = true
+            local content = table.concat(vim.fn.readfile(skill_file), "\n")
+            local front_matter = content:match("^%-%-%-\n(.-)\n%-%-%-")
+            if front_matter then
+              local skill_name = front_matter:match("name:%s*(.-)\n") or name
+              local skill_desc = front_matter:match("description:%s*(.-)\n") or ""
+              skill_name = skill_name:gsub("%s+$", "")
+              skill_desc = skill_desc:gsub("%s+$", "")
+              table.insert(skills, "- name: " .. skill_name .. "\n  description: " .. skill_desc .. "\n  file_path: " .. skill_file)
+            end
+          end
+        end
+      end
+    end
+  end
+
+  if #skills == 0 then
+    table.insert(skills, "\nskill 列表为空")
+  end
+
   local system_prompt = Path.prompts.render_file("aone.avanterules", {
     ask = true,
     code_lang = '',
-    -- hack todos
     tools = table.concat(tools, "\n"),
-    mcp = mcp
+    mcp = mcp,
+    skills = table.concat(skills, "\n")
   })
 
   local repo = ''
@@ -321,8 +359,9 @@ end
 function M:parse_curl_args(prompt_opts)
   local provider_conf, request_body = Providers.parse_config(self)
 
+  local is_normal = prompt_opts.tools and #prompt_opts.tools > 0
   -- 开始的时候 messages 长度 2
-  if #prompt_opts.messages <= 2 then
+  if #prompt_opts.messages <= 2 and is_normal and not prompt_opts.memory then
     init_start_data(prompt_opts)
   end
 
@@ -337,10 +376,12 @@ function M:parse_curl_args(prompt_opts)
   local headers = {
     ["Content-Type"] = "application/json",
     ["x-model-name"] = "ide-idealab/" .. provider_conf.model,
+    ['x-platform-model'] = 'claude-opus-4-6',
     ["x-client-type"] = "Visual Studio Code",
     ["x-client-version"] = "1.107.1",
     ["x-plugin-version"] = "3.2.48",
     ["x-idealab-session-id"] = chat_id,
+    ["x-session-id"] = chat_id,
     ["x-git-repos"] = repo,
   }
 
@@ -384,6 +425,15 @@ function M:parse_curl_args(prompt_opts)
     },
   }
 
+  if not is_normal then
+    messages = {
+      {
+        role = "system",
+        content = prompt_opts.system_prompt,
+      },
+    }
+  end
+
   local assistant = {}
   local add_assistant = function()
     if #assistant > 0 then
@@ -411,6 +461,20 @@ function M:parse_curl_args(prompt_opts)
   idx = 0
   local context_message = ''
   local has_set_environment = false
+  local env_message = table.concat({
+    '<environment>',
+    '<system_info>',
+    vim.json.encode(system_info),
+    '/<system_info>',
+    '<project_structure>',
+    vim.json.encode(root_files),
+    '</project_structure>',
+    '以上是会话初期的部分文件结构，不是最新的，仅供参考，如需查看最新文件结构，请使用相关工具。',
+    '<project_core_files>',
+    vim.json.encode(core_files),
+    '</project_core_files>',
+    '</environment>',
+  }, "\n")
   vim
     .iter(prompt_opts.messages)
     :each(function(msg)
@@ -418,12 +482,16 @@ function M:parse_curl_args(prompt_opts)
 
       if msg.is_context then
         if msg.content then
-          context_message = table.concat({
-            '<additional_data>',
-            msg.content,
-            '以上是用户希望你直接阅读和编辑的内容（如果代码已提供，无需重复使用 view 等工具读取内容）',
-            '/<additional_data>',
-          }, "\n")
+          if msg.content:match("^<memory>") then
+            context_message = msg.content
+          else
+            context_message = table.concat({
+              '<additional_data>',
+              msg.content,
+              '以上是用户希望你直接阅读和编辑的内容（如果代码已提供，无需重复使用 view 等工具读取内容）',
+              '/<additional_data>',
+            }, "\n")
+          end
         end
         return
       end
@@ -433,23 +501,11 @@ function M:parse_curl_args(prompt_opts)
           local contents = {}
           if has_set_environment == false then
             has_set_environment = true
-            table.insert(contents, table.concat({
-              '<environment>',
-              '<system_info>',
-              vim.json.encode(system_info),
-              '/<system_info>',
-              '<project_structure>',
-              vim.json.encode(root_files),
-              '</project_structure>',
-              '以上是会话初期的部分文件结构，不是最新的，仅供参考，如需查看最新文件结构，请使用相关工具。',
-              '<project_core_files>',
-              vim.json.encode(core_files),
-              '</project_core_files>',
-              '</environment>',
-            }, "\n"))
+            table.insert(contents, env_message)
           end
           if idx == last_user_query_idx then
             table.insert(contents, context_message)
+            context_message = '';
           end
           table.insert(contents, msg.content)
           add_message({
@@ -512,6 +568,19 @@ function M:parse_curl_args(prompt_opts)
         end
       end
     end)
+
+  if context_message ~= '' then
+    add_message({
+      content = { {
+        cache_control = {
+          type = "ephemeral"
+        },
+        text = env_message .. "\n\n" .. context_message,
+        type = "text"
+      }},
+      role = "user"
+    })
+  end
 
   add_assistant()
 

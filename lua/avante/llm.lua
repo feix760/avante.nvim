@@ -266,8 +266,8 @@ function M.generate_prompts(opts)
     local lines = Utils.read_file_from_buf_or_disk(instruction_file_path:absolute())
     local instruction_content = lines and table.concat(lines, "\n") or ""
 
-    if instruction_content then 
-      opts.instructions = (opts.instructions or "") .. "\n" .. instruction_content 
+    if instruction_content then
+      opts.instructions = (opts.instructions or "") .. "\n" .. instruction_content
     end
     opts._instructions_loaded = true
   end
@@ -404,7 +404,7 @@ function M.generate_prompts(opts)
       if tokens_usage and tokens_usage.prompt_tokens ~= nil and tokens_usage.completion_tokens ~= nil then
         local target_tokens = context_window * 0.9
         local tokens_count = tokens_usage.prompt_tokens + tokens_usage.completion_tokens
-        Utils.debug("Tokens count", tokens_count)
+        Utils.debug("Tokens count", tokens_count, target_tokens)
         if tokens_count > target_tokens then pending_compaction_history_messages = opts.history_messages end
       end
     end
@@ -469,6 +469,7 @@ function M.generate_prompts(opts)
     messages = messages,
     image_paths = image_paths,
     tools = tools,
+    memory = opts.memory,
     pending_compaction_history_messages = pending_compaction_history_messages,
   }
 end

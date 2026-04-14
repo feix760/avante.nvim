@@ -46,6 +46,7 @@ struct TemplateContext {
     todos: Option<String>,
     tools: Option<String>,
     mcp: Option<String>,
+    skills: Option<String>,
     enable_fastapply: Option<bool>,
     use_react_prompt: Option<bool>,
 }
@@ -78,6 +79,7 @@ fn render(state: &State, template: &str, context: TemplateContext) -> LuaResult<
                   todos => context.todos,
                   tools => context.tools,
                   mcp => context.mcp,
+                  skills => context.skills,
                   enable_fastapply => context.enable_fastapply,
                   use_react_prompt => context.use_react_prompt,
                 })

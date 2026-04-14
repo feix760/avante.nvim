@@ -145,6 +145,10 @@ end
 ---@return boolean
 function M.has_permission_to_access(abs_path)
   if not Path:new(abs_path):is_absolute() then return false end
+
+  local skills_dir = vim.fn.expand("~/.agents/skills")
+  if abs_path:sub(1, #skills_dir) == skills_dir then return true end
+
   local project_root = Utils.get_project_root()
   -- allow if inside project root OR inside user config dir
   local config_dir = vim.fn.stdpath("config")
