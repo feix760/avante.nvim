@@ -155,6 +155,11 @@ end
 function M:parse_response(ctx, data_stream, _, opts)
   -- 检查是否是流结束标志
   if data_stream == "[DONE]" then
+    if buffer ~= "" then
+      M:handle_lines(ctx, opts, { buffer })
+      buffer = ""
+    end
+
     -- self:mock(ctx, opts)
     self:finish_pending_messages(ctx, opts)
     if ctx.tool_use_map and vim.tbl_count(ctx.tool_use_map) > 0 then
@@ -176,11 +181,17 @@ function M:parse_response(ctx, data_stream, _, opts)
     usage = json.usage
   end
 
-  local lines = {}
+  local content = nil
+  if json.choices and json.choices[1] and json.choices[1].delta then
+    content = json.choices[1].delta.content
+  elseif json.content then
+    content = json.content
+  end
 
-  if json.content then
-    if opts.on_chunk then opts.on_chunk(json.content) end
-    buffer = buffer .. json.content
+  local lines = {}
+  if content then
+    if opts.on_chunk then opts.on_chunk(content) end
+    buffer = buffer .. content
     lines = vim.split(buffer, "\n")
     -- 保留最后一行（可能不完整）
     local incomplete_line = table.remove(lines)
