@@ -1047,10 +1047,12 @@ function M.setup(opts)
     }
   )
 
-  local last_model, last_provider = M.get_last_used_model(merged.providers or {})
-  if last_model then apply_model_selection(merged, last_model, last_provider) end
+  -- local last_model, last_provider = M.get_last_used_model(merged.providers or {})
+  -- if last_model then apply_model_selection(merged, last_model, last_provider) end
 
   M._options = merged
+
+  -- Utils.debug("avante.setup", merged.provider, merged.providers[merged.provider])
 
   ---@diagnostic disable-next-line: undefined-field
   if M._options.disable_tools ~= nil then
