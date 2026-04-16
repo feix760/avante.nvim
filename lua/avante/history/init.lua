@@ -261,12 +261,12 @@ local function refresh_history(messages, tools, files, add_diagnostic, tools_to_
 
         -- If this is the last operation for this file, generate synthetic "view"
         -- invocation to provide the up-to-date file contents.
-        if not tool_info.result.is_error then
-          local view_msgs = generate_view_messages(use, path, use.id == file_info.last_tool_id)
-          Utils.debug("Added", #view_msgs, "'view' tool messages for", path)
-          updated_messages = vim.list_extend(updated_messages, view_msgs)
-          tool_count = tool_count + 1
-        end
+        -- if not tool_info.result.is_error then
+          -- local view_msgs = generate_view_messages(use, path, use.id == file_info.last_tool_id)
+          -- Utils.debug("Added", #view_msgs, "'view' tool messages for", path)
+          -- updated_messages = vim.list_extend(updated_messages, view_msgs)
+          -- tool_count = tool_count + 1
+        -- end
 
         if add_diagnostic and use.id == file_info.edit_tool_id then
           local diag_msgs = generate_diagnostic_messages(path)
