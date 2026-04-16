@@ -357,6 +357,8 @@ function M.generate_prompts(opts)
     end
   end
 
+  system_prompt = system_prompt .. "\n\n# Skills\n" .. require('avante.skill').get_skills()
+
   ---@type AvanteLLMMessage[]
   local context_messages = {}
   if opts.prompt_opts and opts.prompt_opts.messages then
