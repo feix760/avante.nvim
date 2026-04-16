@@ -8,6 +8,7 @@ local ReActParser = require("avante.libs.ReAct_parser2")
 local JsonParser = require("avante.libs.jsonparser")
 local Prompts = require("avante.utils.prompts")
 local LlmTools = require("avante.llm_tools")
+local Skill = require("avante.skill")
 
 local P = require("avante.providers")
 
@@ -286,47 +287,14 @@ local function init_start_data(prompt_opts)
   local hub = require("mcphub").get_hub_instance()
   local mcp = hub and hub:get_active_servers_prompt() or ""
 
-  local skills = {}
-  local skill_dirs = {
-    vim.fn.expand("~/.agents/skills"),
-    project_root .. "/.agents/skills",
-  }
-  local seen_skills = {}
-  for _, skill_base_dir in ipairs(skill_dirs) do
-    local dir = vim.loop.fs_scandir(skill_base_dir)
-    if dir then
-      while true do
-        local name, type = vim.loop.fs_scandir_next(dir)
-        if not name then break end
-        if type == "directory" then
-          local skill_file = skill_base_dir .. "/" .. name .. "/SKILL.md"
-          if vim.loop.fs_stat(skill_file) and not seen_skills[name] then
-            seen_skills[name] = true
-            local content = table.concat(vim.fn.readfile(skill_file), "\n")
-            local front_matter = content:match("^%-%-%-\n(.-)\n%-%-%-")
-            if front_matter then
-              local skill_name = front_matter:match("name:%s*(.-)\n") or name
-              local skill_desc = front_matter:match("description:%s*(.-)\n") or ""
-              skill_name = skill_name:gsub("%s+$", "")
-              skill_desc = skill_desc:gsub("%s+$", "")
-              table.insert(skills, "- name: " .. skill_name .. "\n  description: " .. skill_desc .. "\n  file_path: " .. skill_file)
-            end
-          end
-        end
-      end
-    end
-  end
-
-  if #skills == 0 then
-    table.insert(skills, "\nskill 列表为空")
-  end
+  local skills = Skill.get_skills()
 
   local system_prompt = Path.prompts.render_file("aone.avanterules", {
     ask = true,
     code_lang = '',
     tools = table.concat(tools, "\n"),
     mcp = mcp,
-    skills = table.concat(skills, "\n")
+    skills = skills
   })
 
   local repo = ''
@@ -384,10 +352,12 @@ function M:parse_curl_args(prompt_opts)
   local repo_type = start_data.repo_type
   local repo = start_data.repo
 
+  local is_openai = not provider_conf.endpoint:match("ducky.code")
+
+  local endpoint_path = "/v1/chat"
   local headers = {
     ["Content-Type"] = "application/json",
     ["x-model-name"] = "ide-idealab/" .. provider_conf.model,
-    ['x-platform-model'] = 'claude-opus-4-6',
     ["x-client-type"] = "Visual Studio Code",
     ["x-client-version"] = "1.107.1",
     ["x-plugin-version"] = "3.2.48",
@@ -395,6 +365,15 @@ function M:parse_curl_args(prompt_opts)
     ["x-session-id"] = chat_id,
     ["x-git-repos"] = repo,
   }
+
+  if is_openai then
+    endpoint_path = "/chat/completions"
+    headers = {
+      ["Content-Type"] = "application/json",
+      ["x-idealab-session-id"] = chat_id,
+      ["x-session-id"] = chat_id,
+    }
+  end
 
   if Providers.env.require_api_key(provider_conf) then
     local api_key = Providers.env.parse_envvar(self)
@@ -404,9 +383,6 @@ function M:parse_curl_args(prompt_opts)
     end
     headers["Authorization"] = "Bearer " .. api_key
   end
-
-  -- Determine endpoint path based on use_response_api
-  local endpoint_path = "/v1/chat"
 
   local system_info = {
     system_data = vim.uv.os_uname().sysname,
@@ -435,6 +411,15 @@ function M:parse_curl_args(prompt_opts)
       role = "user",
     },
   }
+
+  if is_openai then
+    messages = {
+      {
+        role = "system",
+        content = system_prompt,
+      },
+    }
+  end
 
   if not is_normal then
     messages = {
@@ -603,8 +588,26 @@ function M:parse_curl_args(prompt_opts)
     },
   }
 
+  if is_openai then
+    for _, msg in ipairs(messages) do
+      if type(msg.content) ~= "string" then
+        msg.content = msg.content[1].text
+      end
+    end
+    base_body = {
+      messages = messages,
+      stream = true,
+      stream_options = {
+        include_usage = true,
+      },
+      model = provider_conf.model,
+      temperature = 0.75,
+    }
+  end
+
   return {
     url =  Utils.url_join(provider_conf.endpoint, endpoint_path),
+    -- url =  Utils.url_join(provider_conf.endpoint, endpoint_path .. '/aa'),
     proxy = provider_conf.proxy,
     -- proxy = 'http://127.0.0.1:8080',
     insecure = provider_conf.allow_insecure,

@@ -1052,8 +1052,6 @@ function M.setup(opts)
 
   M._options = merged
 
-  -- Utils.debug("avante.setup", merged.provider, merged.providers[merged.provider])
-
   ---@diagnostic disable-next-line: undefined-field
   if M._options.disable_tools ~= nil then
     Utils.warn(

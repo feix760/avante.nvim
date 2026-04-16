@@ -1819,7 +1819,7 @@ function M.repair_json(json_str)
   -- 将 JSON 字符串写入临时文件
   local input_file = io.open(temp_input, "w")
   if not input_file then
-    self:debug("Failed to create temporary input file")
+    M.debug("Failed to create temporary input file")
     return nil
   end
   input_file:write(json_str)
@@ -1835,7 +1835,7 @@ function M.repair_json(json_str)
   -- 执行命令
   local handle = io.popen(command)
   if not handle then
-    self:debug("Failed to execute jsonrepair command")
+    M.debug("Failed to execute jsonrepair command")
     os.remove(temp_input)
     return nil
   end
@@ -1843,7 +1843,7 @@ function M.repair_json(json_str)
   local success = handle:close()
 
   if not success then
-    self:debug("Failed to repair JSON")
+    M.debug("Failed to repair JSON")
     os.remove(temp_input)
     os.remove(temp_output)
     return nil
@@ -1852,7 +1852,7 @@ function M.repair_json(json_str)
   -- 读取输出文件
   local output_file = io.open(temp_output, "r")
   if not output_file then
-    self:debug("Failed to read repaired JSON output")
+    M.debug("Failed to read repaired JSON output")
     os.remove(temp_input)
     os.remove(temp_output)
     return nil
@@ -1868,10 +1868,10 @@ function M.repair_json(json_str)
   if result and result ~= "" then
     -- 移除结果中的换行符
     result = result:gsub("^%s*(.-)%s*$", "%1")
-    self:info("JSON repaired successfully")
+    M.info("JSON repaired successfully")
     return result
   else
-    self:debug("Failed to repair JSON")
+    M.debug("Failed to repair JSON")
     return nil
   end
 end
