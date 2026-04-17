@@ -34,12 +34,14 @@ end
 local buffer = ""
 local in_tool_use = false
 local tool_use_content = ""
+local text_contents = {}
 local usage = nil
 
 function M:reset_parse_response()
   buffer = ""
   in_tool_use = false
   tool_use_content = ""
+  text_contents = {}
   usage = nil
 end
 
@@ -81,12 +83,21 @@ function M:add_text_message(ctx, content, state, opts)
   if opts.on_messages_add then opts.on_messages_add({ msg }) end
 end
 
+function M:clear_text_contents(ctx, opts)
+  Utils.debug('clear text contents', text_contents);
+  if #text_contents > 0 then
+    self:add_text_message(ctx, table.concat(text_contents, '\n'), "generated", opts)
+  end
+  text_contents = {}
+end
+
 function M:handle_lines(ctx, opts, lines)
   for _, line in ipairs(lines) do
     -- 检查是否是 tool_use 开始标签
     if line:match("^%s*<tool_use%s*([^>]*)>%s*$") then
       in_tool_use = true
       tool_use_content = ""
+      self:clear_text_contents(ctx, opts)
     -- 检查是否是 tool_use 结束标签
     elseif line:match("^%s*</tool_use>%s*$") then
       if in_tool_use then
@@ -127,7 +138,7 @@ function M:handle_lines(ctx, opts, lines)
     else
       if line ~= "" then
         self:finish_pending_messages(ctx, opts)
-        self:add_text_message(ctx, line, "generated", opts)
+        table.insert(text_contents, line)
       end
     end
   end
@@ -150,16 +161,17 @@ function M:mock(ctx, opts)
 
   local lines = vim.split(res, "\n")
 
-  M:handle_lines(ctx, opts, lines)
+  self:handle_lines(ctx, opts, lines)
 end
 
 function M:parse_response(ctx, data_stream, _, opts)
   -- 检查是否是流结束标志
   if data_stream == "[DONE]" then
     if buffer ~= "" then
-      M:handle_lines(ctx, opts, { buffer })
+      self:handle_lines(ctx, opts, { buffer })
       buffer = ""
     end
+    self:clear_text_contents(ctx, opts)
 
     -- self:mock(ctx, opts)
     self:finish_pending_messages(ctx, opts)
@@ -202,7 +214,7 @@ function M:parse_response(ctx, data_stream, _, opts)
     buffer = ""
   end
 
-  M:handle_lines(ctx, opts, lines)
+  self:handle_lines(ctx, opts, lines)
 end
 
 local function ls_dir(path, get_sub)
