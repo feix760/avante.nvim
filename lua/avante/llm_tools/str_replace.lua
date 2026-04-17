@@ -6,7 +6,7 @@ local M = setmetatable({}, Base)
 M.name = "str_replace"
 
 M.description =
-  "The str_replace tool allows you to replace a specific string in a file with a new string. This is used for making precise edits."
+  "The str_replace tool allows you to replace specific lines in a file with a new string. This is used for making precise edits."
 
 function M.enabled()
   return require("avante.config").mode == "agentic" and not require("avante.config").behaviour.enable_fastapply
@@ -23,12 +23,12 @@ M.param = {
     },
     {
       name = "old_str",
-      description = "The text to replace (must match exactly, including whitespace and indentation)",
+      description = "The text of lines to replace (must match exactly, including whitespace and indentation)",
       type = "string",
     },
     {
       name = "new_str",
-      description = "The new text to insert in place of the old text",
+      description = "The new text of new lines to insert in place of the old text",
       type = "string",
     },
   },
