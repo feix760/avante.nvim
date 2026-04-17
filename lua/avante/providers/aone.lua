@@ -325,14 +325,15 @@ local function init_start_data(prompt_opts)
 
   local core_files = {}
   -- 尝试读取 project_root 下的 package.json、README.md 获取依赖
-  for _, file in ipairs({ 'package.json', 'README.md' }) do
+  for _, file in ipairs({ 'package.json' }) do
     -- 如果文件大小小于 10kb
     if vim.loop.fs_stat(project_root .. "/" .. file) and vim.loop.fs_stat(project_root .. "/" .. file).size < 10 * 1024 then
       local content = vim.fn.readfile(project_root .. "/" .. file)
-      table.insert(core_files, {
-        file = file,
-        content = table.concat(content, '\n'),
-      })
+      table.insert(core_files, table.concat({
+        '<file path="' .. file .. '">',
+        table.concat(content, '\n'),
+        '</file>',
+      }, '\n'))
     end
   end
 
@@ -479,7 +480,7 @@ function M:parse_curl_args(prompt_opts)
     '</project_structure>',
     '以上是会话初期的部分文件结构，不是最新的，仅供参考，如需查看最新文件结构，请使用相关工具。',
     '<project_core_files>',
-    vim.json.encode(core_files),
+    table.concat(core_files, "\n"),
     '</project_core_files>',
     '</environment>',
   }, "\n")
@@ -496,7 +497,7 @@ function M:parse_curl_args(prompt_opts)
             context_message = table.concat({
               '<additional_data>',
               msg.content,
-              '以上是用户希望你直接阅读和编辑的内容（如果代码已提供，无需重复使用 view 等工具读取内容）',
+              '以上是用户希望你直接阅读和编辑的内容（如果文件内容已提供，无需重复使用 view 等工具读取内容）',
               '/<additional_data>',
             }, "\n")
           end
@@ -619,7 +620,7 @@ function M:parse_curl_args(prompt_opts)
 
   return {
     url =  Utils.url_join(provider_conf.endpoint, endpoint_path),
-    -- url =  Utils.url_join(provider_conf.endpoint, endpoint_path .. '/aa'),
+    -- url =  Utils.url_join(provider_conf.endpoint, endpoint_path .. '/404'),
     proxy = provider_conf.proxy,
     -- proxy = 'http://127.0.0.1:8080',
     insecure = provider_conf.allow_insecure,
