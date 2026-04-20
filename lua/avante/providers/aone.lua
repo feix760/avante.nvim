@@ -541,7 +541,7 @@ function M:parse_curl_args(prompt_opts)
           local obj = msg.content[1]
           local content = ''
           if obj.type == 'tool_use' then
-            content = '<tool_use json_validate="true">\n' .. vim.json.encode({
+            content = '<tool_use>\n' .. vim.json.encode({
               name = obj.name,
               input = obj.input,
               id = obj.id,
