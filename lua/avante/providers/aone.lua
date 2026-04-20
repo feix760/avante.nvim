@@ -116,7 +116,7 @@ function M:handle_lines(ctx, opts, lines)
           end
 
           if ok then
-            jsn.id = jsn.id or nextId()
+            jsn.id = nextId()
             self:finish_pending_messages(ctx, opts)
             self:add_tool_use_message(ctx, jsn, 'generating', opts)
           else
