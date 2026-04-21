@@ -24,8 +24,8 @@ function M.get_skills()
             local content = table.concat(vim.fn.readfile(skill_file), "\n")
             local front_matter = content:match("^%-%-%-\n(.-)\n%-%-%-")
             if front_matter then
-              local skill_name = front_matter:match("name:%s*(.-)\n") or name
-              local skill_desc = front_matter:match("description:%s*(.-)\n") or ""
+              local skill_name = front_matter:match("name:%s*([^\n]*)") or name
+              local skill_desc = front_matter:match("description:%s*([^\n]*)") or ""
               skill_name = skill_name:gsub("%s+$", "")
               skill_desc = skill_desc:gsub("%s+$", "")
               table.insert(skills, "- name: " .. skill_name .. "\n  description: " .. skill_desc .. "\n  file_path: " .. skill_file)

@@ -8,7 +8,7 @@ local ReActParser = require("avante.libs.ReAct_parser2")
 local JsonParser = require("avante.libs.jsonparser")
 local Prompts = require("avante.utils.prompts")
 local LlmTools = require("avante.llm_tools")
-local Skill = require("avante.skill")
+local Skill = require("avante.utils.skill")
 
 local P = require("avante.providers")
 
