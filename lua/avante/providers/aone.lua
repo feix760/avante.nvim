@@ -203,7 +203,7 @@ function M:parse_response(ctx, data_stream, _, opts)
 
   -- content 以 event:error 开头
   if content and content:match("^id:.*\nevent:error") then
-    opts.on_stop({ reason = "rate_limit", error = content })
+    opts.on_stop({ reason = "rate_limit", retry_after = 10 })
     return
   end
 
@@ -331,14 +331,14 @@ local function init_start_data(prompt_opts)
 
   local core_files = {}
   -- 尝试读取 project_root 下的 package.json、README.md 获取依赖
-  for _, file in ipairs({ 'package.json' }) do
+  for _, file in ipairs({ 'package.json', 'CLAUDE.md' }) do
     -- 如果文件大小小于 10kb
     if vim.loop.fs_stat(project_root .. "/" .. file) and vim.loop.fs_stat(project_root .. "/" .. file).size < 10 * 1024 then
       local content = vim.fn.readfile(project_root .. "/" .. file)
       table.insert(core_files, table.concat({
-        '<file path="' .. file .. '">',
+        '<project_core_file path="' .. file .. '">',
         table.concat(content, '\n'),
-        '</file>',
+        '</project_core_file>',
       }, '\n'))
     end
   end
@@ -490,6 +490,15 @@ function M:parse_curl_args(prompt_opts)
     '</project_core_files>',
     '</environment>',
   }, "\n")
+
+  if is_openai then
+    has_set_environment = true
+    add_message({
+      role = "user",
+      content = env_message,
+    })
+  end
+
   vim
     .iter(prompt_opts.messages)
     :each(function(msg)
@@ -585,12 +594,16 @@ function M:parse_curl_args(prompt_opts)
     end)
 
   if context_message ~= '' then
+    if has_set_environment == false then
+      has_set_environment = true
+      context_message = env_message .. "\n\n" .. context_message
+    end
     add_message({
       content = { {
         cache_control = {
           type = "ephemeral"
         },
-        text = env_message .. "\n\n" .. context_message,
+        text = context_message,
         type = "text"
       }},
       role = "user"
