@@ -203,7 +203,7 @@ function M:parse_response(ctx, data_stream, _, opts)
 
   -- content 以 event:error 开头
   if content and content:match("^id:.*\nevent:error") then
-    opts.on_stop({ reason = "error", error = content })
+    opts.on_stop({ reason = "rate_limit", error = content })
     return
   end
 
