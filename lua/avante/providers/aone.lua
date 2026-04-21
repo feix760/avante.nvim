@@ -201,6 +201,12 @@ function M:parse_response(ctx, data_stream, _, opts)
     content = json.content
   end
 
+  -- content 以 event:error 开头
+  if content and content:match("^id:.*\nevent:error") then
+    opts.on_stop({ reason = "error", error = content })
+    return
+  end
+
   local lines = {}
   if content then
     if opts.on_chunk then opts.on_chunk(content) end
