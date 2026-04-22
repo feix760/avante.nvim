@@ -40,7 +40,7 @@ function M.get_skills()
     table.insert(skills, "\nskill 列表为空")
   end
 
-  return table.concat(skills, "\n")
+  return table.concat(skills, "\n\n")
 end
 
 return M
