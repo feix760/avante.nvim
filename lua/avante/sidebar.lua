@@ -3196,6 +3196,14 @@ function Sidebar:render(opts)
     },
   })
 
+  api.nvim_create_autocmd("BufEnter", {
+    group = self.augroup,
+    buffer = self.containers.result.bufnr,
+    callback = function()
+      vim.cmd("RenderMarkdown buf_enable")
+    end,
+  })
+
   self.containers.result:mount()
 
   self.containers.result:on(event.BufWinEnter, function()
