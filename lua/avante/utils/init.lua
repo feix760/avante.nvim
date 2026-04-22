@@ -1423,7 +1423,7 @@ function M.icons_enabled() return M.has("nvim-web-devicons") or M.has("mini.icon
 ---@param utf8_fallback string|nil
 ---@return string
 function M.icon(string_with_icon, utf8_fallback)
-  if string_with_icon:match("^[🤔✅❌🔄]") then
+  if M.icons_enabled() then
     return string_with_icon
   end
   return utf8_fallback or ""
