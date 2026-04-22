@@ -256,22 +256,25 @@ local function ls_dir(path, get_sub)
   return files
 end
 
+local chat_id = nil;
+
 local start_data = {
-  chat_id = '',
+  project_root = nil,
   root_files = nil,
   core_files = nil,
   system_prompt = '',
-  project_root = '',
   repo_type = '',
   repo = '',
 }
 
-local function init_start_data(prompt_opts)
-  local project_root = Utils.root.get()
-
+local function new_chat_id()
   -- 2133d35c17761635479798037e0ccf
   -- avante1776164386d3356a5741ba10
   chat_id = 'avante' .. os.time() .. string.format("%014x", math.random(0, 0xffffffffffffff))
+end
+
+local function init_start_data(prompt_opts)
+  local project_root = Utils.root.get()
 
   root_files = ls_dir(project_root)
 
@@ -345,7 +348,6 @@ local function init_start_data(prompt_opts)
 
   start_data = {
     project_root = project_root,
-    chat_id = chat_id,
     root_files = root_files,
     core_files = core_files,
     system_prompt = system_prompt,
@@ -358,12 +360,17 @@ function M:parse_curl_args(prompt_opts)
   local provider_conf, request_body = Providers.parse_config(self)
 
   local is_normal = prompt_opts.tools and #prompt_opts.tools > 0
-  -- 开始的时候 messages 长度 2
-  if #prompt_opts.messages <= 2 and is_normal and not prompt_opts.memory then
+
+  if is_normal and start_data.project_root == nil then
     init_start_data(prompt_opts)
   end
 
-  local chat_id = start_data.chat_id
+  if chat_id == nil or (
+    #prompt_opts.messages <= 2 and is_normal and not prompt_opts.memory
+  ) then
+    new_chat_id()
+  end
+
   local project_root = start_data.project_root
   local root_files = start_data.root_files
   local core_files = start_data.core_files
