@@ -1970,7 +1970,7 @@ function Sidebar:get_message_lines(ctx, message, messages, ignore_record_prefix)
     .. ":"
     .. tostring(expanded == true)
   local cached_lines = _message_to_lines_lru_cache:get(cache_key)
-  if cached_lines then return cached_lines end
+  -- if cached_lines then return cached_lines end
   local lines = self:_get_message_lines(ctx, message, messages, ignore_record_prefix)
   --- trim suffix empty lines
   while #lines > 0 and tostring(lines[#lines]) == "" do
