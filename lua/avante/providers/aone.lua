@@ -240,9 +240,9 @@ local function ls_dir(path, get_sub)
   while true do
     local name, type = vim.loop.fs_scandir_next(dir)
     if not name then break end
-    if type == "directory" and get_sub ~= 0 and name ~= '.git' and name ~= 'node_modules' then
+    if type == "directory" and get_sub ~= 0 and name ~= 'node_modules' and not name:match('^%.') then
       local sub_files = ls_dir(path .. "/" .. name, 0)
-      if #sub_files < 50 then
+      if sub_files and #sub_files < 30 then
         for _, sub_name in ipairs(sub_files) do
           table.insert(files, name .. "/" .. sub_name)
         end
