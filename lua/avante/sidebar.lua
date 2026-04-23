@@ -2436,7 +2436,7 @@ function Sidebar:show_input_hint()
     win = self.containers.input.winid,
     width = width,
     height = 1,
-    row = self:get_input_float_window_row(),
+    row = self:get_input_float_window_row() + 1,
     col = math.max(win_width - width, 0), -- Display in the bottom right corner
     style = "minimal",
     border = "none",
