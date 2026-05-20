@@ -1047,8 +1047,8 @@ function M.setup(opts)
     }
   )
 
-  -- local last_model, last_provider = M.get_last_used_model(merged.providers or {})
-  -- if last_model then apply_model_selection(merged, last_model, last_provider) end
+  local last_model, last_provider = M.get_last_used_model(merged.providers or {})
+  if last_model then apply_model_selection(merged, last_model, last_provider) end
 
   M._options = merged
 
