@@ -2246,6 +2246,7 @@ function Sidebar:new_chat(args, cb)
   self.expanded_message_uuids = {}
   self.tool_message_positions = {}
   self.current_tool_use_extmark_id = nil
+  require("avante.utils.chat_id").new_chat_id()
   self:update_content("New chat", { focus = false, scroll = false, callback = function() self:focus_input() end })
   --- goto first line then go to last line
   vim.schedule(function()

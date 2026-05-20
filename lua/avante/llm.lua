@@ -406,7 +406,7 @@ function M.generate_prompts(opts)
       if tokens_usage and tokens_usage.prompt_tokens ~= nil and tokens_usage.completion_tokens ~= nil then
         local target_tokens = context_window * 0.9
         local tokens_count = tokens_usage.prompt_tokens + tokens_usage.completion_tokens
-        Utils.debug("Tokens count", tokens_count, target_tokens)
+        Utils.debug("Tokens count", tokens_count)
         if tokens_count > target_tokens then pending_compaction_history_messages = opts.history_messages end
       end
     end
@@ -471,7 +471,6 @@ function M.generate_prompts(opts)
     messages = messages,
     image_paths = image_paths,
     tools = tools,
-    memory = opts.memory,
     pending_compaction_history_messages = pending_compaction_history_messages,
   }
 end

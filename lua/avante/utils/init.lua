@@ -1425,8 +1425,9 @@ function M.icons_enabled() return M.has("nvim-web-devicons") or M.has("mini.icon
 function M.icon(string_with_icon, utf8_fallback)
   if M.icons_enabled() then
     return string_with_icon
+  else
+    return utf8_fallback or ""
   end
-  return utf8_fallback or ""
 end
 
 function M.deep_extend_with_metatable(behavior, ...)

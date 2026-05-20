@@ -256,8 +256,6 @@ local function ls_dir(path, get_sub)
   return files
 end
 
-local chat_id = nil;
-
 local start_data = {
   project_root = nil,
   root_files = nil,
@@ -266,12 +264,6 @@ local start_data = {
   repo_type = '',
   repo = '',
 }
-
-local function new_chat_id()
-  -- 2133d35c17761635479798037e0ccf
-  -- avante1776164386d3356a5741ba10
-  chat_id = 'avante' .. os.time() .. string.format("%014x", math.random(0, 0xffffffffffffff))
-end
 
 local function init_start_data(prompt_opts)
   local project_root = Utils.root.get()
@@ -365,11 +357,7 @@ function M:parse_curl_args(prompt_opts)
     init_start_data(prompt_opts)
   end
 
-  if chat_id == nil or (
-    #prompt_opts.messages <= 2 and is_normal and not prompt_opts.memory
-  ) then
-    new_chat_id()
-  end
+  local chat_id = require("avante.utils.chat_id").get_chat_id()
 
   local project_root = start_data.project_root
   local root_files = start_data.root_files
