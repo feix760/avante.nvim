@@ -768,8 +768,11 @@ function M:parse_curl_args(prompt_opts)
   local provider_conf, request_body = Providers.parse_config(self)
   local disable_tools = provider_conf.disable_tools or false
 
+  local chat_id = require("avante.utils.chat_id").get_chat_id()
   local headers = {
     ["Content-Type"] = "application/json",
+    ["x-idealab-session-id"] = chat_id,
+    ["x-session-id"] = chat_id,
   }
 
   if Providers.env.require_api_key(provider_conf) then
