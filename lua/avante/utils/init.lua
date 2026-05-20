@@ -78,6 +78,18 @@ function M.get_system_info()
   local is_git_repo = vim.fn.isdirectory(".git") == 1
   if is_git_repo then res = res .. "\n- The user is operating inside a git repository" end
 
+  -- 尝试读取 project_root 下的 .git/config 获取仓库地址
+  if vim.loop.fs_stat(project_root .. "/.git/config") then
+    local git_config = vim.fn.readfile(project_root .. "/.git/config")
+    for _, line in ipairs(git_config) do
+      if line:match("^%s*url%s*=%s*(.+)$") then
+        repo = line:match("^%s*url%s*=%s*(.+)$")
+        res = res .. string.format("\n- Git repository: %s", repo)
+        break
+      end
+    end
+  end
+
   return res
 end
 

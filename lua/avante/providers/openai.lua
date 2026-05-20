@@ -537,6 +537,18 @@ function M:parse_response(ctx, data_stream, _, opts)
 
   local jsn = vim.json.decode(data_stream)
 
+  -- content 以 event:error 开头
+  local content = nil
+  if jsn.choices and jsn.choices[1] and jsn.choices[1].delta then
+    content = jsn.choices[1].delta.content
+  elseif jsn.content then
+    content = jsn.content
+  end
+  if content and content:match("^id:.*\nevent:error") then
+    opts.on_stop({ reason = "rate_limit", retry_after = 10 })
+    return
+  end
+
   -- Check if this is a Response API event (has 'type' field)
   if jsn.type and type(jsn.type) == "string" then
     -- Response API event-driven format
@@ -869,6 +881,7 @@ function M:parse_curl_args(prompt_opts)
   return {
     url = Utils.url_join(provider_conf.endpoint, endpoint_path),
     proxy = provider_conf.proxy,
+    -- proxy = 'http://127.0.0.1:8888',
     insecure = provider_conf.allow_insecure,
     headers = Utils.tbl_override(headers, self.extra_headers),
     body = vim.tbl_deep_extend("force", base_body, request_body),
