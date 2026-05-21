@@ -16,7 +16,7 @@ local list_models_cached_result = {}
 ---@return table
 local function create_model_entries(provider_name, provider_cfg)
   local res = {}
-  if provider_cfg.list_models and provider_cfg.__inherited_from == nil then
+  if provider_cfg.list_models then
     local models
     if type(provider_cfg.list_models) == "function" then
       if M.list_models_invoked[provider_cfg.list_models] then return {} end
