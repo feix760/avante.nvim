@@ -902,7 +902,7 @@ local function apply_model_selection(config, model_name, provider_name)
     config.provider = target_provider_name
     target_provider.model = model_name
     if not target_provider.model_names then target_provider.model_names = {} end
-    for _, model_name_ in ipairs({ model_name }) do
+    for _, model_name_ in ipairs({ model_name, current_model_name }) do
       if not vim.tbl_contains(target_provider.model_names, model_name_) then
         table.insert(target_provider.model_names, model_name_)
       end
