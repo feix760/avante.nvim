@@ -1726,8 +1726,7 @@ function Sidebar:should_auto_scroll()
 
   local is_scrolled_to_bottom = last_visible_line >= total_lines - 1
 
-  return true
-  -- return is_scrolled_to_bottom
+  return is_scrolled_to_bottom
 end
 
 Sidebar.throttled_update_content = Utils.throttle(function(self, ...)
@@ -1740,7 +1739,8 @@ end, 50)
 function Sidebar:update_content(content, opts)
   if not Utils.is_valid_container(self.containers.result) then return end
 
-  local should_auto_scroll = self:should_auto_scroll()
+  -- local should_auto_scroll = self:should_auto_scroll()
+  local should_auto_scroll = true
 
   opts = vim.tbl_deep_extend(
     "force",
