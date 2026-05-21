@@ -161,7 +161,9 @@ function M.get_agents_rules_prompt()
     local file_path = Utils.join_paths(project_root, file_name)
     if vim.fn.filereadable(file_path) == 1 then
       local content = vim.fn.readfile(file_path)
-      if content then return table.concat(content, "\n") end
+      if content then
+        return '<file path="' .. file_name .. '">\n' .. table.concat(content, "\n") .. '\n</file>'
+      end
     end
   end
   return nil
