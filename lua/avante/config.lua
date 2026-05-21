@@ -873,7 +873,7 @@ function M.get_last_used_model(known_providers)
         return
       end
       if data.provider_model and provider.model and provider.model ~= data.provider_model then
-        return provider.model, data.last_provider
+        -- return provider.model, data.last_provider
       end
     end
 
@@ -902,7 +902,7 @@ local function apply_model_selection(config, model_name, provider_name)
     config.provider = target_provider_name
     target_provider.model = model_name
     if not target_provider.model_names then target_provider.model_names = {} end
-    for _, model_name_ in ipairs({ model_name, current_model_name }) do
+    for _, model_name_ in ipairs({ model_name }) do
       if not vim.tbl_contains(target_provider.model_names, model_name_) then
         table.insert(target_provider.model_names, model_name_)
       end
