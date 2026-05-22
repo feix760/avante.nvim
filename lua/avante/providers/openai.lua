@@ -883,7 +883,7 @@ function M:parse_curl_args(prompt_opts)
 
   return {
     url = Utils.url_join(provider_conf.endpoint, endpoint_path),
-    proxy = provider_conf.proxy,
+    proxy = os.getenv('HTTPS_PROXY') or provider_conf.proxy,
     -- proxy = 'http://127.0.0.1:8888',
     insecure = provider_conf.allow_insecure,
     headers = Utils.tbl_override(headers, self.extra_headers),
