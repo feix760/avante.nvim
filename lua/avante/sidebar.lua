@@ -2431,6 +2431,7 @@ function Sidebar:show_input_hint()
   local win_width = api.nvim_win_get_width(self.containers.input.winid)
   local width = #hint_text
 
+  if true then return end -- 会遮挡输入，不显示
   -- Create the floating window
   self.input_hint_window = api.nvim_open_win(buf, false, {
     relative = "win",
@@ -3011,7 +3012,7 @@ function Sidebar:create_input_container()
     end
   end
 
-  api.nvim_set_option_value("filetype", "AvanteInput", { buf = self.containers.input.bufnr })
+  api.nvim_set_option_value("filetype", "markdown", { buf = self.containers.input.bufnr })
 
   -- Setup completion
   api.nvim_create_autocmd("InsertEnter", {
