@@ -162,7 +162,7 @@ function M.get_diagnostics(bufnr)
         vim.diagnostic.severity.HINT,
       },
     })
-  local result = vim
+  return vim
     .iter(diagnositcs)
     :map(function(diagnostic)
       local d = {
@@ -175,34 +175,6 @@ function M.get_diagnostics(bufnr)
       return d
     end)
     :totable()
-
-  -- Get location list items for the current buffer
-  local ok_loclist, loclist = pcall(vim.fn.getloclist, 0, { items = 0 })
-  if ok_loclist and loclist and loclist.items then
-    for _, item in ipairs(loclist.items) do
-      -- Only include items for the current buffer
-      if item.bufnr == bufnr and item.valid == 1 then
-        local item_severity = "ERROR"
-        if item.type == "W" then
-          item_severity = "WARNING"
-        elseif item.type == "I" then
-          item_severity = "INFORMATION"
-        elseif item.type == "H" then
-          item_severity = "HINT"
-        end
-
-        table.insert(result, {
-          content = item.text or "",
-          start_line = item.lnum,
-          end_line = item.end_lnum or item.lnum,
-          severity = item_severity,
-          source = "location_list",
-        })
-      end
-    end
-  end
-
-  return result
 end
 
 ---@param filepath string
