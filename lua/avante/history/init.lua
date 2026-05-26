@@ -230,7 +230,7 @@ local function refresh_history(messages, tools, files, add_diagnostic, tools_to_
   local updated_messages = {}
   local tool_count = 0
 
-  for _, message in ipairs(messages) do
+  for idx, message in ipairs(messages) do
     local use = Helpers.get_tool_use_data(message)
     if use then
       -- This is a tool invocation message. We will be handling both use and result together.
@@ -250,7 +250,16 @@ local function refresh_history(messages, tools, files, add_diagnostic, tools_to_
         if tool_info.kind == "view" then
           local path = tool_info.path
           assert(path, "encountered 'view' tool invocation without path")
-          update_view_result(tool_info, use.id ~= files[tool_info.path].last_tool_id)
+
+          local last_tool_id = files[tool_info.path].last_tool_id
+          local last_tool_id_idx
+          for i, msg in ipairs(messages) do
+            local msg_use = Helpers.get_tool_use_data(msg)
+            if msg_use and msg_use.id == last_tool_id then
+              last_tool_id_idx = i
+            end
+          end
+          update_view_result(tool_info, idx < last_tool_id_idx)
         end
       end
 
@@ -268,12 +277,12 @@ local function refresh_history(messages, tools, files, add_diagnostic, tools_to_
           -- tool_count = tool_count + 1
         -- end
 
-        if add_diagnostic and use.id == file_info.edit_tool_id then
-          local diag_msgs = generate_diagnostic_messages(path)
-          Utils.debug("Added", #diag_msgs, "'diagnostics' tool messages for", path)
-          updated_messages = vim.list_extend(updated_messages, diag_msgs)
-          tool_count = tool_count + 1
-        end
+        -- if add_diagnostic and use.id == file_info.edit_tool_id then
+          -- local diag_msgs = generate_diagnostic_messages(path)
+          -- Utils.debug("Added", #diag_msgs, "'diagnostics' tool messages for", path)
+          -- updated_messages = vim.list_extend(updated_messages, diag_msgs)
+          -- tool_count = tool_count + 1
+        -- end
       end
     elseif not Helpers.get_tool_result_data(message) then
       -- Skip the tool result messages (since we process them together with their "use"s.
