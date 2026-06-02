@@ -230,7 +230,7 @@ local function refresh_history(messages, tools, files, add_diagnostic, tools_to_
   local updated_messages = {}
   local tool_count = 0
 
-  for idx, message in ipairs(messages) do
+  for _, message in ipairs(messages) do
     local use = Helpers.get_tool_use_data(message)
     if use then
       -- This is a tool invocation message. We will be handling both use and result together.
@@ -250,16 +250,7 @@ local function refresh_history(messages, tools, files, add_diagnostic, tools_to_
         if tool_info.kind == "view" then
           local path = tool_info.path
           assert(path, "encountered 'view' tool invocation without path")
-
-          local last_tool_id = files[tool_info.path].last_tool_id
-          local last_tool_id_idx
-          for i, msg in ipairs(messages) do
-            local msg_use = Helpers.get_tool_use_data(msg)
-            if msg_use and msg_use.id == last_tool_id then
-              last_tool_id_idx = i
-            end
-          end
-          update_view_result(tool_info, idx < last_tool_id_idx)
+          -- update_view_result(tool_info, use.id ~= files[tool_info.path].last_tool_id)
         end
       end
 

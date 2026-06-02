@@ -382,7 +382,7 @@ function M.generate_prompts(opts)
   if #selected_files > 0 or opts.selected_code ~= nil then
     local code_context = Path.prompts.render_file("_context.avanterules", template_opts)
     if code_context ~= "" then
-      table.insert(context_messages, { role = "user", content = code_context, visible = false, is_context = true })
+      -- table.insert(context_messages, { role = "user", content = code_context, visible = false, is_context = true })
     end
   end
 
@@ -417,6 +417,18 @@ function M.generate_prompts(opts)
   for _, msg in ipairs(opts.history_messages or {}) do
     local message = msg.message
     if msg.is_user_submission then
+      if #msg.selected_files > 0 or msg.selected_code ~= nil then
+        local code_context = Path.prompts.render_file("_context.avanterules", {
+          ask = false,
+          code_lang = '',
+          selected_files = msg.selected_files,
+          selected_code = msg.selected_code,
+          recently_viewed_files = msg.recently_viewed_files,
+        })
+        if code_context ~= "" then
+          table.insert(messages, { role = "user", content = code_context, visible = false, is_context = true })
+        end
+      end
       message = vim.deepcopy(message)
       local content = message.content
       if Config.mode == "agentic" then

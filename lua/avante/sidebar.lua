@@ -2705,6 +2705,19 @@ function Sidebar:handle_submit(request)
   if has_shortcuts then request = new_content end
 
   local selected_filepaths = self.file_selector:get_selected_filepaths()
+  local selected_files = {}
+  if selected_filepaths then
+    for _, filepath in ipairs(selected_filepaths) do
+      local lines, error = Utils.read_file_from_buf_or_disk(filepath)
+      if error ~= nil then
+        Utils.error("error reading file: " .. error)
+      else
+        local content = table.concat(lines or {}, "\n")
+        local filetype = Utils.get_filetype(filepath)
+        table.insert(selected_files, { path = filepath, content = content, file_type = filetype })
+      end
+    end
+  end
 
   ---@type AvanteSelectedCode | nil
   local selected_code = self.code.selection
@@ -2840,6 +2853,8 @@ function Sidebar:handle_submit(request)
         is_user_submission = true,
         selected_filepaths = selected_filepaths,
         selected_code = selected_code,
+        selected_files = selected_files,
+        recently_viewed_files = Utils.get_recent_filepaths(),
       }),
     })
   end
