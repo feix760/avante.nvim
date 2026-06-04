@@ -12,7 +12,7 @@ function M.read_file_toplevel_symbols(input, opts)
   local on_log = opts.on_log
   local RepoMap = require("avante.repo_map")
   local abs_path = Helpers.get_abs_path(input.path)
-  if not Helpers.has_permission_to_access(abs_path) then return "", "No permission to access path: " .. abs_path end
+  -- if not Helpers.has_permission_to_access(abs_path) then return "", "No permission to access path: " .. abs_path end
   if on_log then on_log("path: " .. abs_path) end
   if not Path:new(abs_path):exists() then return "", "File does not exists: " .. abs_path end
   local filetype = RepoMap.get_ts_lang(abs_path)
