@@ -46,7 +46,7 @@ function M.func(input, opts)
   if not input.path then return false, "pathf are required" end
   if on_log then on_log("path: " .. input.path) end
   local abs_path = Helpers.get_abs_path(input.path)
-  if not Helpers.has_permission_to_access(abs_path) then return false, "No permission to access path: " .. abs_path end
+  -- if not Helpers.has_permission_to_access(abs_path) then return false, "No permission to access path: " .. abs_path end
   if not on_complete then return false, "on_complete is required" end
   local diagnostics = Utils.lsp.get_diagnostics_from_filepath(abs_path)
   local jsn_str = vim.json.encode(diagnostics)

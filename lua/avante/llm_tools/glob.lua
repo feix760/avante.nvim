@@ -49,7 +49,7 @@ function M.func(input, opts)
   local on_log = opts.on_log
   local on_complete = opts.on_complete
   local abs_path = Helpers.get_abs_path(input.path)
-  if not Helpers.has_permission_to_access(abs_path) then return "", "No permission to access path: " .. abs_path end
+  -- if not Helpers.has_permission_to_access(abs_path) then return "", "No permission to access path: " .. abs_path end
   if on_log then on_log("path: " .. abs_path) end
   if on_log then on_log("pattern: " .. input.pattern) end
   local files = vim.fn.glob(abs_path .. "/" .. input.pattern, true, true)
