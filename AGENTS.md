@@ -14,7 +14,7 @@ avante.nvim 是一个把 Neovim 改造为 **类 Cursor / Cline AI IDE** 的插�
 - 行内 Edit 与代码块 Diff 合并
 - 内联 Auto-Suggestion（Copilot Ghost-Text 风格）
 - **Agentic Tool Use**：模型自主调用 ls/grep/glob/bash/edit_file/web_search/git_commit … 等 30+ 工具
-- 多 Provider 抽象：Claude / OpenAI / Gemini / Azure / Bedrock / Vertex / Ollama / Copilot / Cohere / WatsonX / Aone / aClaude …
+- 多 Provider 抽象：Claude / OpenAI / Gemini / Azure / Bedrock / Vertex / Ollama / Copilot / Cohere / WatsonX / aClaude …
 - ACP（Agent Client Protocol）外部 Agent 接入（Claude-Code / Gemini-CLI 等）
 - RAG 服务、Repo Map（基于 tree-sitter，Rust 编写）、Web Search、PKCE OAuth
 
@@ -104,7 +104,7 @@ lua/avante/
 │   ├── bedrock.lua + bedrock/claude.lua    AWS Bedrock，按 model 动态 load_model_handler
 │   ├── copilot.lua                GitHub Copilot token 兑换
 │   ├── cohere.lua / ollama.lua / watsonx_code_assistant.lua
-│   ├── aclaude.lua / aone.lua     字节/阿里内部 Provider 适配
+│   ├── aclaude.lua     阿里内部 Provider 适配
 │
 ├── templates/                     ★ Jinja 模板（filetype = jinja，扩展名 .avanterules）
 │   ├── base.avanterules           其它模板的 extends 基类
