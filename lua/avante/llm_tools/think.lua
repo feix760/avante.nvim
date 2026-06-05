@@ -34,7 +34,7 @@ M.param = {
   fields = {
     {
       name = "thought",
-      description = "Your thoughts.",
+      description = "Your thoughts. 请用中文",
       type = "string",
     },
   },
