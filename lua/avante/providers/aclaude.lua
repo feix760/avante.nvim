@@ -152,6 +152,8 @@ function M:parse_response(ctx, data_stream, event_state, opts)
       event_state = "content_block_delta"
     elseif data_stream:match('"content_block_stop"') then
       event_state = "content_block_stop"
+    elseif data_stream:match('"type"%s*:%s*"error"') then
+      event_state = "error"
     end
   end
   if ctx.content_blocks == nil then ctx.content_blocks = {} end
