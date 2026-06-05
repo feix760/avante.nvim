@@ -131,9 +131,13 @@ function Sidebar:delete_autocmds()
 end
 
 function Sidebar:delete_containers()
+  -- 使用 noautocmd 防止 unmount 触发外部插件（如 render-markdown）的耗时处理
+  local saved_ei = vim.o.eventignore
+  vim.o.eventignore = "all"
   for _, container in pairs(self.containers) do
-    container:unmount()
+    pcall(function() container:unmount() end)
   end
+  vim.o.eventignore = saved_ei
   self.containers = {}
 end
 
@@ -262,7 +266,14 @@ end
 
 ---@param opts? SidebarCloseOptions
 function Sidebar:close(opts)
+  -- 防止重入：如果已经在关闭过程中，直接返回
+  if self._closing then return end
+  self._closing = true
+
   opts = vim.tbl_extend("force", { goto_code_win = true }, opts or {})
+
+  -- 立即停止 state_timer，防止定时器在关闭过程中继续触发
+  self:clear_state()
 
   -- If sidebar was maximized make it normal size so that other windows
   -- will not be left minimized.
@@ -278,6 +289,8 @@ function Sidebar:close(opts)
 
   self:recover_code_winhl()
   self:close_input_hint()
+
+  self._closing = false
 end
 
 function Sidebar:shutdown()
@@ -1730,6 +1743,8 @@ function Sidebar:should_auto_scroll()
 end
 
 Sidebar.throttled_update_content = Utils.throttle(function(self, ...)
+  -- 关闭过程中不再更新内容
+  if self._closing then return end
   local args = { ... }
   self:update_content(unpack(args))
 end, 50)
@@ -2156,6 +2171,7 @@ function Sidebar:clear_state()
 end
 
 function Sidebar:render_state()
+  if self._closing then return end
   if not Utils.is_valid_container(self.containers.result) then return end
   if not self.current_state then return end
   local lines = vim.api.nvim_buf_get_lines(self.containers.result.bufnr, 0, -1, false)
