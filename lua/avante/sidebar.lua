@@ -2820,6 +2820,7 @@ function Sidebar:handle_submit(request)
     end
   end
 
+  self.is_generating = true
   ---@type AvanteLLMStopCallback
   local function on_stop(stop_opts)
     self.is_generating = false

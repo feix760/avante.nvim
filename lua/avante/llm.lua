@@ -424,7 +424,6 @@ function M.generate_prompts(opts)
         if msg.selected_files then
           for _, mf in ipairs(msg.selected_files) do
             if f.path == mf.path then
-              Utils.info('Updating selected file '.. mf.path)
               file =  mf
             end
           end
