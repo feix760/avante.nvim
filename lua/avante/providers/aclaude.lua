@@ -299,7 +299,7 @@ function M:parse_response(ctx, data_stream, event_state, opts)
     end
     return
   elseif event_state == "error" then
-    opts.on_stop({ reason = "error", error = vim.json.decode(data_stream) })
+    opts.on_stop({ reason = "error", error = data_stream })
   end
 end
 
