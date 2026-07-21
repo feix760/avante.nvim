@@ -544,7 +544,7 @@ function M:parse_response(ctx, data_stream, _, opts)
   elseif jsn.content then
     content = jsn.content
   end
-  if content and content:match("^id:.*\nevent:error") then
+  if content and type(content) == "string" and content:match("^id:.*\nevent:error") then
     opts.on_stop({ reason = "rate_limit", retry_after = 10 })
     return
   end
