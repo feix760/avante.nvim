@@ -296,7 +296,7 @@ M._defaults = {
     ---@type AvanteSupportedProvider
     openai = {
       endpoint = "https://api.openai.com/v1",
-      model = "gpt-4o",
+      -- model = "gpt-4o",
       timeout = 30000, -- Timeout in milliseconds, increase this for reasoning models
       context_window = 128000, -- Number of tokens to send to the model for context
       use_response_api = copilot_use_response_api, -- Automatically switch to Response API for GPT-5 Codex models
