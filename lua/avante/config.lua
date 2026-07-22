@@ -313,7 +313,7 @@ M._defaults = {
     ---@type AvanteSupportedProvider
     copilot = {
       endpoint = "https://api.githubcopilot.com",
-      model = "gpt-4o-2024-11-20",
+      -- model = "gpt-4o-2024-11-20",
       proxy = nil, -- [protocol://]host[:port] Use this proxy
       allow_insecure = false, -- Allow insecure server connections
       timeout = 30000, -- Timeout in milliseconds
@@ -501,7 +501,7 @@ M._defaults = {
     qwen = {
       __inherited_from = "openai",
       endpoint = "https://dashscope.aliyuncs.com/compatible-mode/v1",
-      model = "qwen3-coder-plus",
+      -- model = "qwen3-coder-plus",
       api_key_name = "DASHSCOPE_API_KEY",
     },
     mistral = {
