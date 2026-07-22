@@ -98,7 +98,7 @@ end
 
 local function update_current_input()
   local user_input = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n")
-  if idx == #filtered_entries - 1 or filtered_entries[idx + 1].input ~= user_input then
+  if idx == #filtered_entries - 1 or not filtered_entries[idx + 1] or filtered_entries[idx + 1].input ~= user_input then
     entries[#entries].input = user_input
 
     vim.fn.clearmatches()
